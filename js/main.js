@@ -7,11 +7,17 @@ const LINKS = {
   brunch: '',     // 브런치
 };
 
-// 강의 현장 사진: images 폴더에 넣고 파일 이름과 설명을 적으면 코치 소개 아래에 보입니다.
+// 강의 현장 사진: images 폴더에 넣고 파일 이름을 적으면 검은 사진 자리에 들어갑니다.
 // 학생 얼굴이 잘 보이지 않거나 동의받은 사진만 써 주세요.
-const PHOTOS = [
-  // { src: '/images/mental-1.jpg', alt: '자신감 UP! 스위치 ON! 수업 현장' },
-];
+const PHOTOS = {
+  hero: '',     // 첫 화면 오른쪽 (예: '/images/hero.jpg')
+  school: '',   // 학교와 청소년
+  athlete: '',  // 운동선수와 운동부
+  org: '',      // 기관·기업과 청년
+  parent: '',   // 학부모
+  about1: '',   // 코치 소개 큰 사진
+  about2: '',   // 코치 소개 작은 사진
+};
 
 // 강의 다섯 주제 (코치님이 준 내용 그대로, 빈칸은 "협의")
 const PROGRAMS = [
@@ -55,40 +61,25 @@ const PROGRAMS = [
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// 강의 둘러보기 탭
+// 강의 둘러보기: 다섯 주제를 모두 펼쳐 보여 준다
 (function programs() {
-  const tabs = document.getElementById('program-tabs');
-  const panel = document.getElementById('program-panel');
-  const show = (i) => {
-    const p = PROGRAMS[i];
-    tabs.querySelectorAll('.tab').forEach((t, j) => t.setAttribute('aria-selected', String(i === j)));
-    panel.innerHTML = `
-      <article class="program">
-        <h3>${esc(p.topic)}</h3>
+  const list = document.getElementById('program-list');
+  list.innerHTML = PROGRAMS.map((p) => `
+    <article class="program">
+      <h3>${esc(p.topic)}</h3>
+      <div>
         <p class="title">${esc(p.title)}</p>
-        <dl class="facts">
-          <div><dt>대상</dt><dd>${esc(p.target)}</dd></div>
-          <div><dt>시간</dt><dd>${esc(p.time)}</dd></div>
-          <div><dt>진행 방식</dt><dd>${esc(p.method)}</dd></div>
+        <dl>
+          <dt>대상</dt><dd>${esc(p.target)}</dd>
+          <dt>시간</dt><dd>${esc(p.time)}</dd>
+          <dt>진행 방식</dt><dd>${esc(p.method)}</dd>
         </dl>
-        <div style="margin-top:24px">
-          <a class="btn btn-primary btn-small" href="#contact" data-topic="${esc(p.topic)}">이 주제로 문의하기</a>
-        </div>
-      </article>`;
-  };
-  PROGRAMS.forEach((p, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'tab';
-    b.setAttribute('role', 'tab');
-    b.textContent = p.topic;
-    b.addEventListener('click', () => show(i));
-    tabs.appendChild(b);
-  });
-  show(0);
+        <a class="link" href="#contact" data-topic="${esc(p.topic)}">${esc(p.topic)} 강의 문의하기</a>
+      </div>
+    </article>`).join('');
 
-  // "이 주제로 문의하기"를 누르면 문의 종류를 미리 골라 둔다
-  panel.addEventListener('click', (e) => {
+  // 주제별 문의 링크를 누르면 문의 종류를 미리 골라 둔다
+  list.addEventListener('click', (e) => {
     const a = e.target.closest('[data-topic]');
     if (!a) return;
     const sel = document.getElementById('f-type');
@@ -97,12 +88,18 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
   });
 })();
 
-// 사진
+// 사진이 있으면 검은 사진 자리에 넣는다
 (function photos() {
-  if (!PHOTOS.length) return;
-  const box = document.getElementById('photos');
-  box.innerHTML = PHOTOS.map((p) => `<img src="${esc(p.src)}" alt="${esc(p.alt)}" loading="lazy" style="border-radius:14px;aspect-ratio:4/3;object-fit:cover;width:100%">`).join('');
-  box.hidden = false;
+  document.querySelectorAll('[data-photo]').forEach((slot) => {
+    const src = PHOTOS[slot.dataset.photo];
+    if (!src) return;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.loading = 'lazy';
+    slot.prepend(img);
+    slot.querySelectorAll('.mark, .note').forEach((el) => { el.hidden = true; });
+  });
 })();
 
 // 카카오톡 · SNS 링크
@@ -112,11 +109,10 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
     document.getElementById('kakao-wrap').hidden = false;
   }
   const names = { blog: '블로그', instagram: '인스타그램', brunch: '브런치' };
-  const nav = document.getElementById('social');
   const items = Object.keys(names).filter((k) => LINKS[k]);
   if (items.length) {
-    nav.innerHTML = items.map((k) => `<a href="${esc(LINKS[k])}" target="_blank" rel="noopener">${names[k]}</a>`).join('');
-    nav.hidden = false;
+    document.getElementById('social-list').innerHTML = items.map((k) => `<li><a href="${esc(LINKS[k])}" target="_blank" rel="noopener">${names[k]}</a></li>`).join('');
+    document.getElementById('social').hidden = false;
   }
 })();
 
@@ -128,9 +124,9 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
     const { rows } = await r.json();
     if (!rows || !rows.length) return;
     document.getElementById('voice-list').innerHTML = rows.map((v) => `
-      <figure class="card voice" style="margin:0">
+      <figure class="voice">
         <blockquote>${esc(v.message).replace(/\n/g, '<br>')}</blockquote>
-        <footer>${esc(v.display_name || '참여자')} · ${esc(v.topic || '')}</footer>
+        <figcaption>${esc(v.display_name || '참여자')}, ${esc(v.topic || '')} 수업</figcaption>
       </figure>`).join('');
     document.getElementById('voices').hidden = false;
     document.querySelector('[data-voices-link]').hidden = false;
@@ -177,6 +173,6 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
   // 문의 칸이 화면에 보이면 휴대폰 아래 고정 버튼을 숨긴다
   const cta = document.getElementById('mobile-cta');
-  new IntersectionObserver(([en]) => { cta.hidden = en.isIntersecting; }, { threshold: 0.1 })
+  new IntersectionObserver(([en]) => { cta.hidden = en.isIntersecting; }, { threshold: 0.05 })
     .observe(document.getElementById('contact'));
 })();

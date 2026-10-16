@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>관리자 | WithGrowing</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <style>
@@ -12,11 +13,11 @@
     .page { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
     .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .login { max-width: 400px; margin: 12vh auto 0; }
-    .login h1 { font-size: 24px; font-weight: 800; margin-bottom: 16px; }
+    .login h1 { font-size: 24px; font-weight: 400; margin-bottom: 16px; }
     .switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
     .switch .tab { width: 100%; min-height: 52px; font-size: 16px; }
     .count { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
-    .count b { font-size: 32px; font-weight: 800; color: var(--brand); display: block; line-height: 1.1; }
+    .count b { font-family: var(--serif); font-size: 36px; font-weight: 400; color: var(--brand); display: block; line-height: 1.1; }
     .count span { font-size: 14px; color: var(--muted); }
     .items { display: grid; gap: 12px; }
     .item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
@@ -25,12 +26,12 @@
     .item .who { font-size: 18px; font-weight: 700; margin-top: 2px; }
     .item .row { margin-top: 6px; font-size: 16px; }
     .item .row small { color: var(--muted); margin-right: 6px; }
-    .item .body { margin-top: 10px; white-space: pre-wrap; background: var(--soft); border-radius: 10px; padding: 12px; font-size: 16px; }
+    .item .body { margin-top: 10px; white-space: pre-wrap; background: var(--soft); border-radius: 0; padding: 12px; font-size: 16px; }
     .copy { background: none; border: 0; padding: 0; font: inherit; color: var(--brand); text-decoration: underline; cursor: pointer; }
     .states { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-    .states button { min-height: 46px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--muted); }
+    .states button { min-height: 46px; border-radius: 0; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--muted); }
     .states button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
-    .badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+    .badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 0; background: var(--soft); color: var(--muted); }
     .badge.on { background: var(--brand-soft); color: var(--brand); }
     .empty { text-align: center; color: var(--muted); padding: 40px 0; }
   </style>
@@ -42,7 +43,7 @@
       <form class="form" id="login-form">
         <div class="field">
           <label for="pw">비밀번호</label>
-          <input type="password" id="pw" autocomplete="current-password" style="width:100%;min-height:50px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px">
+          <input type="password" id="pw" autocomplete="current-password" >
         </div>
         <div class="msg err" id="login-msg" hidden></div>
         <button class="btn btn-primary" type="submit">들어가기</button>
@@ -51,7 +52,7 @@
 
     <section id="app" hidden>
       <div class="top">
-        <p class="logo">With<span>Growing</span> 관리자</p>
+        <p class="logo">WithGrowing 관리자</p>
         <button class="btn btn-ghost btn-small" id="logout" type="button">나가기</button>
       </div>
       <div class="switch" role="tablist">
