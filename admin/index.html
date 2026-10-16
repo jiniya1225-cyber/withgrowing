@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>관리자 | WithGrowing</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: var(--soft); }
+    .page { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .login { max-width: 400px; margin: 12vh auto 0; }
+    .login h1 { font-size: 24px; font-weight: 800; margin-bottom: 16px; }
+    .switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .switch .tab { width: 100%; min-height: 52px; font-size: 16px; }
+    .count { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; display: flex; gap: 24px; flex-wrap: wrap; }
+    .count b { font-size: 32px; font-weight: 800; color: var(--brand); display: block; line-height: 1.1; }
+    .count span { font-size: 14px; color: var(--muted); }
+    .items { display: grid; gap: 12px; }
+    .item { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+    .item.new { border-left: 4px solid var(--brand); }
+    .item .when { font-size: 14px; color: var(--muted); }
+    .item .who { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .item .row { margin-top: 6px; font-size: 16px; }
+    .item .row small { color: var(--muted); margin-right: 6px; }
+    .item .body { margin-top: 10px; white-space: pre-wrap; background: var(--soft); border-radius: 10px; padding: 12px; font-size: 16px; }
+    .copy { background: none; border: 0; padding: 0; font: inherit; color: var(--brand); text-decoration: underline; cursor: pointer; }
+    .states { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .states button { min-height: 46px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--muted); }
+    .states button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--soft); color: var(--muted); }
+    .badge.on { background: var(--brand-soft); color: var(--brand); }
+    .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="login" id="login">
+      <h1>WithGrowing 관리자</h1>
+      <form class="form" id="login-form">
+        <div class="field">
+          <label for="pw">비밀번호</label>
+          <input type="password" id="pw" autocomplete="current-password" style="width:100%;min-height:50px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px">
+        </div>
+        <div class="msg err" id="login-msg" hidden></div>
+        <button class="btn btn-primary" type="submit">들어가기</button>
+      </form>
+    </section>
+
+    <section id="app" hidden>
+      <div class="top">
+        <p class="logo">With<span>Growing</span> 관리자</p>
+        <button class="btn btn-ghost btn-small" id="logout" type="button">나가기</button>
+      </div>
+      <div class="switch" role="tablist">
+        <button class="tab" role="tab" data-view="inquiries" aria-selected="true">문의함</button>
+        <button class="tab" role="tab" data-view="feedback" aria-selected="false">소감함</button>
+      </div>
+      <div class="count" id="count"></div>
+      <div class="msg err" id="app-msg" hidden></div>
+      <div class="items" id="items"></div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const KEY = 'wg_admin_pw';
+      const STATUSES = ['문의', '협의', '확정'];
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const when = (t) => new Date(t).toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+      let view = 'inquiries';
+
+      const api = async (method, query, body) => {
+        const r = await fetch('/api/admin' + (query || ''), {
+          method,
+          headers: { 'x-admin-password': sessionStorage.getItem(KEY) || '', 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.status === 401) { logout(); throw new Error(j.error || '비밀번호가 맞지 않아요.'); }
+        if (!r.ok) throw new Error(j.error || '문제가 생겼어요.');
+        return j;
+      };
+
+      function logout(msg) {
+        sessionStorage.removeItem(KEY);
+        $('app').hidden = true;
+        $('login').hidden = false;
+        $('pw').value = '';
+        if (msg) { $('login-msg').textContent = msg; $('login-msg').hidden = false; }
+        $('pw').focus();
+      }
+
+      function renderInquiries(rows) {
+        const n = (s) => rows.filter((r) => r.status === s).length;
+        $('count').innerHTML = STATUSES.map((s) => `<div><b>${n(s)}</b><span>${s === '문의' ? '새 문의' : s}</span></div>`).join('');
+        if (!rows.length) { $('items').innerHTML = '<p class="empty">아직 들어온 문의가 없어요.</p>'; return; }
+        $('items').innerHTML = rows.map((r) => `
+          <article class="item ${r.status === '문의' ? 'new' : ''}">
+            <p class="when">${when(r.created_at)}</p>
+            <p class="who">${esc(r.name)}</p>
+            <p class="row"><small>연락처</small><button class="copy" data-copy="${esc(r.contact)}">${esc(r.contact)}</button></p>
+            <p class="row"><small>종류</small>${esc(r.inquiry_type || '-')}</p>
+            <p class="row"><small>희망 날짜</small>${esc(r.preferred_date || '-')}</p>
+            ${r.message ? `<p class="body">${esc(r.message)}</p>` : ''}
+            <div class="states">
+              ${STATUSES.map((s) => `<button data-id="${r.id}" data-status="${s}" aria-pressed="${r.status === s}">${s}</button>`).join('')}
+            </div>
+          </article>`).join('');
+      }
+
+      function renderFeedback(rows) {
+        const waiting = rows.filter((r) => r.public_ok && !r.approved).length;
+        $('count').innerHTML = `<div><b>${rows.length}</b><span>전체 소감</span></div><div><b>${waiting}</b><span>공개 승인 기다림</span></div><div><b>${rows.filter((r) => r.approved).length}</b><span>사이트에 공개 중</span></div>`;
+        if (!rows.length) { $('items').innerHTML = '<p class="empty">아직 들어온 소감이 없어요.</p>'; return; }
+        $('items').innerHTML = rows.map((r) => `
+          <article class="item ${r.public_ok && !r.approved ? 'new' : ''}">
+            <p class="when">${when(r.created_at)} · ${esc(r.topic || '')}</p>
+            <p class="who">${esc(r.display_name || '이름 없음')}</p>
+            <p class="body">${esc(r.message)}</p>
+            <p class="row" style="margin-top:12px">
+              ${r.approved ? '<span class="badge on">사이트에 공개 중</span>' : r.public_ok ? '<span class="badge">공개 동의함</span>' : '<span class="badge">공개 동의 안 함 · 공개할 수 없어요</span>'}
+            </p>
+            ${r.public_ok ? `<div style="margin-top:12px"><button class="btn ${r.approved ? 'btn-ghost' : 'btn-primary'} btn-small" data-fb="${r.id}" data-approve="${!r.approved}">${r.approved ? '공개 내리기' : '사이트에 공개하기'}</button></div>` : ''}
+          </article>`).join('');
+      }
+
+      async function load() {
+        $('app-msg').hidden = true;
+        document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.view === view)));
+        try {
+          const { rows } = await api('GET', view === 'feedback' ? '?view=feedback' : '');
+          $('login').hidden = true;
+          $('app').hidden = false;
+          (view === 'feedback' ? renderFeedback : renderInquiries)(rows);
+        } catch (e) {
+          if (!$('app').hidden) { $('app-msg').textContent = e.message; $('app-msg').hidden = false; }
+          else { $('login-msg').textContent = e.message; $('login-msg').hidden = false; $('pw').value = ''; $('pw').focus(); }
+        }
+      }
+
+      $('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        $('login-msg').hidden = true;
+        sessionStorage.setItem(KEY, $('pw').value);
+        load();
+      });
+      $('logout').addEventListener('click', () => logout());
+      document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => { view = b.dataset.view; load(); }));
+
+      $('items').addEventListener('click', async (e) => {
+        const c = e.target.closest('[data-copy]');
+        if (c) {
+          try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = '복사했어요 ✓'; setTimeout(() => { c.textContent = c.dataset.copy; }, 1500); }
+          catch { const r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+          return;
+        }
+        const s = e.target.closest('[data-status]');
+        const f = e.target.closest('[data-fb]');
+        try {
+          if (s) await api('PATCH', '', { kind: 'inquiry', id: Number(s.dataset.id), status: s.dataset.status });
+          else if (f) await api('PATCH', '', { kind: 'feedback', id: Number(f.dataset.fb), approved: f.dataset.approve === 'true' });
+          else return;
+          load();
+        } catch (err) { $('app-msg').textContent = err.message; $('app-msg').hidden = false; }
+      });
+
+      if (sessionStorage.getItem(KEY)) load(); else $('pw').focus();
+    })();
+  </script>
+</body>
+</html>
